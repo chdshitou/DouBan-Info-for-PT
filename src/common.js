@@ -305,6 +305,17 @@ const getDoubanInfo = async (doubanId, imdbId) => {
     console.log(error);
   }
 };
+// 从条目接口取中文名，去掉季数后缀（如「瑞克和莫蒂 第一季」），
+// getTvSeasonData 会在中文名后拼接季数搜索其他季
+const getSubjectTitle = async (doubanId) => {
+  try {
+    const { title = '' } = await fetchDoubanApi(`/subject/${doubanId}`);
+    return isChinese(title) ? title.replace(/\s*第.+?季$/, '') : '';
+  } catch (error) {
+    console.log(error);
+    return '';
+  }
+};
 const getDoubanInfoByIMDB = async (imdbId) => {
   try {
     const doubanData = await fetchDoubanApi(`/imdb/${imdbId}`);
@@ -312,17 +323,15 @@ const getDoubanInfoByIMDB = async (imdbId) => {
     if (!mobileLink) {
       throw new Error('豆瓣API未返回条目');
     }
-    let chineseTitle = title;
-    const isChineseReg = /[\u4e00-\u9fa5]+/;
-    if (!isChineseReg.test(title) && !title.match(/^\d+$/)) {
-      if (altTitle) {
-        chineseTitle = altTitle.split('/')[0].trim();
-      } else {
-        chineseTitle = title;
-      }
-    }
     const subjectLink = mobileLink.replace('m.douban.com/movie', 'movie.douban.com').replace(/\/$/, '');
     const doubanId = subjectLink.match(/subject\/(\d+)/)?.[1] ?? '';
+    let chineseTitle = title;
+    if (!isChinese(title) && !title.match(/^\d+$/)) {
+      // 部分条目（如 Rick and Morty）alt_title 为空，再从条目接口取中文名
+      chineseTitle = altTitle
+        ? altTitle.split('/')[0].trim()
+        : await getSubjectTitle(doubanId) || title;
+    }
     const doubanInfo = {
       director: attrs.director?.join(' / '),
       runtime: attrs.movie_duration?.join(' / '),
