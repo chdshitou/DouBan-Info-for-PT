@@ -1,3 +1,17 @@
+# [1.8.0](https://github.com/techmovie/DouBan-Info-for-PT/compare/1.7.11...1.8.0) (2026-10-22)
+
+
+### Bug Fixes
+
+* update ([2673f00](https://github.com/techmovie/DouBan-Info-for-PT/commit/2673f0024ae5627756584f0e511642086449ae08))
+
+
+### Features
+
+* 豆瓣信息融入站点原生 UI（8 站适配）+ 新增 AR/BLU 站点 ([#16](https://github.com/techmovie/DouBan-Info-for-PT/issues/16)) ([159f6f1](https://github.com/techmovie/DouBan-Info-for-PT/commit/159f6f14f84b2bdf48856da78fd73f6e7b6fa36a))
+
+
+
 ## [1.7.11](https://github.com/techmovie/DouBan-Info-for-PT/compare/1.7.10...1.7.11) (2026-05-16)
 
 
