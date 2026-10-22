@@ -180,6 +180,24 @@ const getDoubanIdByIMDB = async (imdbId) => {
 //     }
 //   });
 // };
+// 豆瓣 v2 API 统一用 POST 携带 apikey
+const fetchDoubanApi = (path) => {
+  return fetch(`${DOUBAN_API_URL}${path}`, {
+    data: encodeURI('apikey=0ab215a8b1977939201640fa14c66bab'),
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  });
+};
+// 海报换成大图
+const getLargePoster = (url = '') => {
+  return url.replace(/s(_ratio_poster|pic)/g, 'l$1').replace(/img\d/, 'img9');
+};
+// 未开分的条目返回 0 或 0.0，置空避免显示 0 分
+const formatAverage = (average) => {
+  return parseFloat(average) ? average : '';
+};
 const numberToChinese = (num) => {
   const digits = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
   const value = parseInt(num, 10);
@@ -230,16 +248,9 @@ const getTvSeasonData = async (data) => {
       return data;
     } else {
       const query = `${chineseTitle} 第${seasonNumber}季`;
-      const params = encodeURI('apikey=0ab215a8b1977939201640fa14c66bab');
       let subjects = [];
       try {
-        const searchData = await fetch(`${DOUBAN_API_URL}/search?q=${query}`, {
-          data: params,
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-        });
+        const searchData = await fetchDoubanApi(`/search?q=${query}`);
         if (searchData.count > 0) {
           subjects = searchData.subjects;
         }
@@ -296,15 +307,11 @@ const getDoubanInfo = async (doubanId, imdbId) => {
 };
 const getDoubanInfoByIMDB = async (imdbId) => {
   try {
-    const params = encodeURI('apikey=0ab215a8b1977939201640fa14c66bab');
-    const doubanData = await fetch(`${DOUBAN_API_URL}/imdb/${imdbId}`, {
-      data: params,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
-    const { title, attrs = {}, image, summary, rating, alt_title: altTitle, mobile_link: mobileLink } = doubanData;
+    const doubanData = await fetchDoubanApi(`/imdb/${imdbId}`);
+    const { title = '', attrs = {}, image = '', summary = '', rating = {}, alt_title: altTitle, mobile_link: mobileLink } = doubanData;
+    if (!mobileLink) {
+      throw new Error('豆瓣API未返回条目');
+    }
     let chineseTitle = title;
     const isChineseReg = /[\u4e00-\u9fa5]+/;
     if (!isChineseReg.test(title) && !title.match(/^\d+$/)) {
@@ -324,12 +331,12 @@ const getDoubanInfoByIMDB = async (imdbId) => {
       aka: altTitle || '',
       region: attrs.country?.join(' / '),
       link: subjectLink,
-      poster: image,
+      poster: getLargePoster(image),
       summary,
       chineseTitle,
-      votes: rating.numRaters,
-      average: rating.average,
-      id: subjectLink.match(/subject\/(\d+)/)?.[1] ?? '',
+      votes: rating.numRaters ?? 0,
+      average: formatAverage(rating.average),
+      id: doubanId,
       episodes: attrs.episodes?.join(' / ') ?? '',
     };
     // no need to save series info
@@ -346,6 +353,49 @@ const getDoubanInfoByIMDB = async (imdbId) => {
   } catch (error) {
     console.log(error);
   }
+};
+// 按豆瓣 ID 通过 API 获取详情，用于剧集的其他季（没有对应的 IMDB 条目）。
+// 该接口不返回语言和片长，只有 PTP、ANT 用到这两项，它们只有电影不会走到这里
+const getDoubanInfoBySubject = async (doubanId) => {
+  try {
+    const doubanData = await fetchDoubanApi(`/subject/${doubanId}`);
+    if (!doubanData?.id) {
+      throw new Error('豆瓣API未返回条目');
+    }
+    const {
+      title = '', aka = [], images = {}, summary = '', rating = {}, ratings_count: votes,
+      genres = [], countries = [], directors = [],
+    } = doubanData;
+    return {
+      director: directors.map(item => item.name).join(' / '),
+      runtime: '',
+      language: '',
+      genre: genres.join(' / '),
+      aka: aka.join(' / '),
+      region: countries.join(' / '),
+      link: `https://movie.douban.com/subject/${doubanData.id}`,
+      poster: getLargePoster(images.large),
+      summary,
+      chineseTitle: title,
+      votes: votes ?? 0,
+      average: formatAverage(rating.average),
+      id: doubanData.id,
+    };
+  } catch (error) {
+    console.log(error);
+  }
+};
+// 豆瓣API未命中时的备用方案：先通过豆瓣搜索拿到ID，再解析条目页面获取详情
+const getDoubanInfoFallback = async (imdbId) => {
+  let subject = await getDoubanId(imdbId);
+  if (!subject?.id) {
+    subject = await getDoubanIdByIMDB(imdbId).catch(error => console.log(error));
+  }
+  if (!subject?.id) {
+    return;
+  }
+  const doubanInfo = await getDoubanInfo(subject.id, imdbId);
+  return doubanInfo && { ...doubanInfo, id: subject.id };
 };
 /* const getAwardInfo = async (doubanLink) => {
   const awardsPage = await fetch(`${doubanLink}/awards/`, {
@@ -366,16 +416,19 @@ const getDoubanInfoByIMDB = async (imdbId) => {
 const formatDoubanInfo = async (domString) => {
   const dom = new DOMParser().parseFromString(domString, 'text/html');
   const chineseTitle = $('title', dom).text().replace('(豆瓣)', '').trim();
-  const jsonData = JSON.parse($('head > script[type="application/ld+json"]', dom).html().replace(/(\r\n|\n|\r|\t)/gm, ''));
+  const ldJson = $('head > script[type="application/ld+json"]', dom).html();
+  // 豆瓣风控时会跳到 sec.douban.com 的「载入中」验证页，页面里没有条目数据
+  if (!ldJson) {
+    throw new Error('豆瓣条目页面解析失败，可能触发了豆瓣安全验证');
+  }
+  const jsonData = JSON.parse(ldJson.replace(/(\r\n|\n|\r|\t)/gm, ''));
   const fetchAnchor = function (anchor) {
     return anchor?.[0]?.nextSibling?.nodeValue?.trim() ?? '';
   };
   const rating = jsonData.aggregateRating ? jsonData.aggregateRating.ratingValue : 0;
   const votes = jsonData.aggregateRating ? jsonData.aggregateRating.ratingCount : 0;
   const director = jsonData.director ? jsonData.director : [];
-  const poster = jsonData.image
-    .replace(/s(_ratio_poster|pic)/g, 'l$1')
-    .replace(/img\d/, 'img9');
+  const poster = getLargePoster(jsonData.image);
   const link = `https://movie.douban.com${jsonData.url}`;
   const introductionDom = $('#link-report > span.all.hidden,#link-report-intra > [property="v:summary"], #link-report > [property="v:summary"]', dom);
   const summary = (
@@ -461,9 +514,9 @@ const createDoubanDom = async (doubanId, imdbId, doubanInfo) => {
   </div>
   <div class="fix-col grid-col5"></div>`);
   const doubanData = doubanInfo || await getDoubanInfo(doubanId, imdbId);
-  $('.douban-dom .grid-col5').html(`<div class="summary">${doubanData.summary || '暂无简介'}</div>`);
+  $('.douban-dom .grid-col5').html(`<div class="summary">${doubanData?.summary || '暂无简介'}</div>`);
   let posterStyle = $('.picture-douban-wrapper').attr('style');
-  const posterImg = $(poster).attr('src') ? $(poster).attr('src') : doubanData.poster;
+  const posterImg = $(poster).attr('src') ? $(poster).attr('src') : doubanData?.poster;
   posterStyle = posterStyle?.replace(/\(.+\)/, `(${posterImg})`);
   $('.picture-douban-wrapper').attr('style', posterStyle);
   $('.douban-dom').click(() => {
@@ -774,5 +827,7 @@ export {
   getTvSeasonData,
   getDoubanIdByIMDB,
   getDoubanInfoByIMDB,
+  getDoubanInfoBySubject,
+  getDoubanInfoFallback,
   renderDoubanInfo,
 };

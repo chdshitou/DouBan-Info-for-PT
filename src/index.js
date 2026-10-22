@@ -3,49 +3,66 @@ import {
 } from './const';
 import {
   getImdbId, getTvSeasonData,
-  addToPtpPage, getDoubanInfoByIMDB, addToANTPage, renderDoubanInfo,
+  addToPtpPage, getDoubanInfo, getDoubanInfoByIMDB, getDoubanInfoBySubject, getDoubanInfoFallback,
+  addToANTPage, renderDoubanInfo,
 } from './common';
 import './style.css';
-(async () => {
-  if (CURRENT_SITE_INFO) {
-    const imdbId = getImdbId();
-    if (!imdbId) {
-      return;
-    }
-    try {
-      const savedIds = GM_getValue('ids_v2') || {};
-      if (!savedIds[imdbId] ||
-        (savedIds[imdbId] && savedIds[imdbId].updateTime && Date.now() - savedIds[imdbId].updateTime >= 30 * 24 * 60 * 60 * 1000)) {
-        let doubanId = '';
-        const movieData = await getDoubanInfoByIMDB(imdbId);
-        if (!movieData) {
-          throw new Error('没有找到豆瓣条目');
-        }
-        const { id = '', episodes = '' } = movieData;
-        doubanId = id;
-        if (episodes) {
-          const tvData = await getTvSeasonData(movieData);
-          doubanId = tvData.id;
-        }
-        if (CURRENT_SITE_NAME.match(/PTP/)) {
-          addToPtpPage(movieData);
-        } else if (CURRENT_SITE_NAME.match(/ANT/)) {
-          addToANTPage(movieData);
-        } else {
-          renderDoubanInfo(null, doubanId, imdbId);
-        }
-      } else {
-        const savedData = savedIds[imdbId];
-        if (CURRENT_SITE_NAME.match(/PTP/)) {
-          addToPtpPage(savedData);
-        } else if (CURRENT_SITE_NAME.match(/ANT/)) {
-          addToANTPage(savedData);
-        } else {
-          renderDoubanInfo(savedData, savedData.doubanId, imdbId);
-        }
+
+const CACHE_EXPIRE_TIME = 30 * 24 * 60 * 60 * 1000;
+
+// 读取本地缓存的豆瓣数据，过期视为未命中
+const getCachedInfo = (imdbId) => {
+  const cached = (GM_getValue('ids_v2') || {})[imdbId];
+  if (cached && !(cached.updateTime && Date.now() - cached.updateTime >= CACHE_EXPIRE_TIME)) {
+    return cached;
+  }
+};
+
+// 依次尝试本地缓存、豆瓣API、解析豆瓣条目页面
+const loadDoubanData = async (imdbId) => {
+  const doubanData = getCachedInfo(imdbId) ||
+    await getDoubanInfoByIMDB(imdbId) ||
+    await getDoubanInfoFallback(imdbId);
+  if (!doubanData) {
+    throw new Error('没有找到豆瓣条目');
+  }
+  return doubanData;
+};
+
+// 剧集按种子标题匹配对应季的条目。其他季没有对应的 IMDB 条目，改用豆瓣 ID 获取详情，
+// 失败时退回解析该季的豆瓣页面，都取不到时沿用第一季的数据
+const resolveSeason = async (doubanData, imdbId) => {
+  // 缓存数据的条目 ID 存在 doubanId 字段
+  const doubanId = doubanData.doubanId || doubanData.id;
+  if (doubanData.episodes) {
+    const seasonId = (await getTvSeasonData(doubanData))?.id;
+    if (seasonId && seasonId !== doubanId) {
+      const seasonData = await getDoubanInfoBySubject(seasonId) || await getDoubanInfo(seasonId, imdbId);
+      if (seasonData) {
+        return { doubanId: seasonId, doubanData: seasonData };
       }
-    } catch (error) {
-      console.log(error);
     }
+  }
+  return { doubanId, doubanData };
+};
+
+(async () => {
+  const imdbId = CURRENT_SITE_INFO ? getImdbId() : '';
+  if (!imdbId) {
+    return;
+  }
+  try {
+    const doubanData = await loadDoubanData(imdbId);
+    // PTP、ANT 只有电影，直接插入站点页面
+    if (CURRENT_SITE_NAME.match(/PTP/)) {
+      addToPtpPage(doubanData);
+    } else if (CURRENT_SITE_NAME.match(/ANT/)) {
+      addToANTPage(doubanData);
+    } else {
+      const season = await resolveSeason(doubanData, imdbId);
+      renderDoubanInfo(season.doubanData, season.doubanId, imdbId);
+    }
+  } catch (error) {
+    console.log(error);
   }
 })();
