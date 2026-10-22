@@ -1,3 +1,7 @@
+## [1.8.1](https://github.com/techmovie/DouBan-Info-for-PT/compare/1.8.0...1.8.1) (2026-10-22)
+
+
+
 # [1.8.0](https://github.com/techmovie/DouBan-Info-for-PT/compare/1.7.11...1.8.0) (2026-10-22)
 
 
