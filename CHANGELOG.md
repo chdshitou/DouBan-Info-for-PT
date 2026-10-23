@@ -1,3 +1,18 @@
+## [1.8.2](https://github.com/techmovie/DouBan-Info-for-PT/compare/1.8.1...1.8.2) (2026-10-23)
+
+
+### Bug Fixes
+
+* 缓存中片名不是中文时重新获取豆瓣数据 ([1f0d6cb](https://github.com/techmovie/DouBan-Info-for-PT/commit/1f0d6cb8a69c2691723dc86815c7f952c4769f16))
+* 豆瓣API未返回中文别名时从条目接口获取中文片名 ([3cced6f](https://github.com/techmovie/DouBan-Info-for-PT/commit/3cced6f2e259f297d2cdab13f9918c0a1d7e4d7c))
+
+
+### Features
+
+* 适配 hdf.world 与 hd-space.org，iTS 改为就地融合 ([#17](https://github.com/techmovie/DouBan-Info-for-PT/issues/17)) ([2a13b55](https://github.com/techmovie/DouBan-Info-for-PT/commit/2a13b5598b1ebffe8a94e0a893134bdbdc726524))
+
+
+
 ## [1.8.1](https://github.com/techmovie/DouBan-Info-for-PT/compare/1.8.0...1.8.1) (2026-10-22)
 
 
