@@ -65,8 +65,6 @@ export default defineConfig({
           '*://secret-cinema.pw/torrents.php?id=*',
           '*://aither.cc/torrents/*',
           '*://shadowthein.net/details.php?id=*',
-          '*://baconbits.org/torrents.php?id=*',
-          '*://broadcity.in/details.php?id=*',
           '*://tgx.rs/torrent/*',
         ],
         downloadURL:
