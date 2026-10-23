@@ -4,7 +4,7 @@
 
 为国外PT站增加中文信息，数据源来自于豆瓣。
 
-目前支持`PTP` `BTN` `HDB` `KG` `BHD` `FL` `PHD` `BLU` `ACM` `HDT` `IPT` `TL` `Aither` `AvistaZ` `bB` `iTS` `SC` `Bdc` `ANT` `AR` `HDF` `HDS`。
+目前支持`PTP` `BTN` `HDB` `KG` `BHD` `FL` `PHD` `BLU` `ACM` `HDT` `IPT` `TL` `Aither` `AvistaZ` `iTS` `SC` `ANT` `AR` `HDF` `HDS`。
 
 ## 就地融合
 
