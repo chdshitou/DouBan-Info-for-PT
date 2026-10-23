@@ -2,7 +2,7 @@ import {
   CURRENT_SITE_INFO, CURRENT_SITE_NAME,
 } from './const';
 import {
-  getImdbId, getTvSeasonData,
+  getImdbId, getTvSeasonData, isChinese,
   addToPtpPage, getDoubanInfo, getDoubanInfoByIMDB, getDoubanInfoBySubject, getDoubanInfoFallback,
   addToANTPage, renderDoubanInfo,
 } from './common';
@@ -10,10 +10,14 @@ import './style.css';
 
 const CACHE_EXPIRE_TIME = 30 * 24 * 60 * 60 * 1000;
 
-// 读取本地缓存的豆瓣数据，过期视为未命中
+// 读取本地缓存的豆瓣数据，过期视为未命中。
+// 旧版本在豆瓣 API 没有中文别名时会把英文片名存进缓存，这类缓存同样视为未命中重新获取
 const getCachedInfo = (imdbId) => {
   const cached = (GM_getValue('ids_v2') || {})[imdbId];
-  if (cached && !(cached.updateTime && Date.now() - cached.updateTime >= CACHE_EXPIRE_TIME)) {
+  if (
+    cached && isChinese(cached.chineseTitle) &&
+    !(cached.updateTime && Date.now() - cached.updateTime >= CACHE_EXPIRE_TIME)
+  ) {
     return cached;
   }
 };
