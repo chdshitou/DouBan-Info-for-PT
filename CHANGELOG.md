@@ -1,3 +1,12 @@
+## [1.8.3](https://github.com/techmovie/DouBan-Info-for-PT/compare/1.8.2...1.8.3) (2026-10-25)
+
+
+### Features
+
+* BHD/FL/HDT/IPT 四站豆瓣信息就地融合优化 ([#18](https://github.com/techmovie/DouBan-Info-for-PT/issues/18)) ([4be3515](https://github.com/techmovie/DouBan-Info-for-PT/commit/4be35153bcf524a7b912aca48e4e1adb2ed191ca))
+
+
+
 ## [1.8.2](https://github.com/techmovie/DouBan-Info-for-PT/compare/1.8.1...1.8.2) (2026-10-23)
 
 
