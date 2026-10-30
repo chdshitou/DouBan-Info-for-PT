@@ -14,6 +14,10 @@
 - **豆瓣卡片站点**：Aither / AvistaZ / KG / PHD / SC / TGX / TorrentLeech 用统一的豆瓣信息卡片。
 - **TMDB 兜底**：豆瓣缺中文片名 / 简介 / 海报时按优先级从 TMDB 补齐。
 
+## 安装
+
+[Greasy Fork 安装地址](https://greasyfork.org/zh-CN/scripts/410851-douban-info-for-pt)
+
 ## 站点 × 功能适配
 
 > 中文片名与中文简介：所有站点的详情页与种子列表页均支持。
@@ -151,9 +155,7 @@ TMDB 接口需要自己申请的凭据，在 [themoviedb.org/settings/api](https
 - **同一作品多版本只查一次**：按「IMDb 编号 + 片名 + 年份 + 季数 + 集数」归并，各版本共用一份结果。
 - 接口请求走 `GM_xmlhttpRequest`，不受站点 CSP 与跨域限制；海报走各自图片 CDN 直连。
 
-## 安装
 
-[Greasy Fork 安装地址](https://greasyfork.org/zh-CN/scripts/410851-douban-info-for-pt)
 
 ## 注意事项
 
