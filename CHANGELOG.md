@@ -1,3 +1,12 @@
+## [1.8.4](https://github.com/techmovie/DouBan-Info-for-PT/compare/1.8.3...1.8.4) (2026-10-30)
+
+
+### Bug Fixes
+
+* build dist file ([ebf15ac](https://github.com/techmovie/DouBan-Info-for-PT/commit/ebf15ac5655541fb77357e8a6995caa21abb1096))
+
+
+
 ## [1.8.3](https://github.com/techmovie/DouBan-Info-for-PT/compare/1.8.2...1.8.3) (2026-10-25)
 
 

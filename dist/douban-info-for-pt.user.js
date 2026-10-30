@@ -2,7 +2,7 @@
 // @name            douban-info-for-pt
 // @name:en         douban-info-for-pt
 // @namespace       https://github.com/techmovie/DouBan-Info-for-PT
-// @version         1.8.3
+// @version         1.8.4
 // @author          birdplane
 // @description     在PT站电影详情页展示部分中文信息
 // @description:en  Display some Chinese information on the PT site movie details page
